@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Roads and bases — strategy</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: #1a3e1f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-wrapper {
+            position: relative;
+        }
+        .game-container {
+            background: #2a2a1c;
+            padding: 15px;
+            border-radius: 24px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
+            background-color: #3c5e2b;
+            border-radius: 8px;
+        }
+        .info-panel {
+            background: #2c2c1e;
+            margin-top: 16px;
+            padding: 12px 20px;
+            border-radius: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            color: #f9e7c2;
+            text-shadow: 1px 1px 0 #1f3a1a;
+            font-weight: bold;
+        }
+        .resource-box {
+            background: #1e2a12;
+            padding: 6px 16px;
+            border-radius: 28px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .resource {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 1.2rem;
+        }
+        .gold { color: #ffd966; }
+        .wood { color: #b5d18b; }
+        .metal { color: #b0b0b0; }
+        .action-counter {
+            background: #4a2e1e;
+            padding: 4px 14px;
+            border-radius: 32px;
+            font-family: monospace;
+            font-size: 1.4rem;
+        }
+        button {
+            background: #7c5f3a;
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 6px 16px;
+            border-radius: 32px;
+            cursor: pointer;
+            transition: 0.1s linear;
+            font-size: 1rem;
+        }
+        button:active {
+            transform: scale(0.96);
+            background: #9b7c4f;
+        }
+        .end-turn-btn {
+            font-size: 1.25rem;
+            padding: 8px 24px;
+            background: #8b6942;
+            box-shadow: 0 2px 6px black;
+        }
+        .log {
+            background: #0f1a0b;
+            max-width: 300px;
+            min-width: 200px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: monospace;
+            height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        .log div {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .turn-indicator {
+            font-size: 1.2rem;
+            background: #00000099;
+            padding: 4px 14px;
+            border-radius: 30px;
+        }
+        .blue {
+            color: #6bc8ff;
+            background: #0a2f44;
+            padding: 4px 12px;
+            border-radius: 24px;
+        }
+        .red {
+            color: #ff9e6b;
+            background: #441c1c;
+            padding: 4px 12px;
+            border-radius: 24px;
+        }
+        .burger-menu {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+        }
+        .burger-icon {
+            width: 44px;
+            height: 44px;
+            background: #1f2a12cc;
+            backdrop-filter: blur(6px);
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            border: 1px solid #dbb46a;
+            transition: 0.1s;
+        }
+        .burger-icon div {
+            width: 26px;
+            height: 3px;
+            background: #fff0c0;
+            border-radius: 4px;
+        }
+        .burger-icon:active {
+            transform: scale(0.94);
+        }
+        .dropdown-menu {
+            position: absolute;
+            top: 52px;
+            right: 0;
+            background: #2e2b1f;
+            border-radius: 24px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 180px;
+            border: 2px solid #dbb46a;
+            box-shadow: 0 6px 16px black;
+            z-index: 201;
+        }
+        .dropdown-menu button {
+            background: #4f3a24;
+            text-align: center;
+            font-size: 1rem;
+            padding: 8px;
+        }
+        .dropdown-menu button:active {
+            background: #7e5d38;
+        }
+        .hidden {
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #2e2b1f;
+            border-radius: 40px;
+            padding: 24px;
+            text-align: center;
+            max-width: 340px;
+            width: 85%;
+            border: 3px solid #dbb46a;
+            box-shadow: 0 10px 30px black;
+        }
+        .modal-content h3 {
+            margin: 0 0 20px 0;
+            color: #ffefb9;
+            font-size: 1.8rem;
+        }
+        .modal-content p {
+            color: #f5e5b0;
+            margin: 15px 0;
+            font-size: 1.1rem;
+        }
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .action-btn {
+            background: #4f3a24;
+            border: none;
+            padding: 14px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 60px;
+            color: #fff3cf;
+            text-align: left;
+            padding-left: 24px;
+            transition: 0.05s linear;
+        }
+        .action-btn:active {
+            background: #7e5d38;
+            transform: scale(0.97);
+        }
+        .close-modal {
+            margin-top: 20px;
+            background: #7c2e2e;
+            padding: 10px;
+            font-size: 1rem;
+        }
+        .rules-content {
+            text-align: left;
+            background: #1e2a1a;
+            color: #f5f0d7;
+            font-size: 1rem;
+            max-height: 70vh;
+            overflow-y: auto;
+            border-radius: 28px;
+            padding: 10px 16px;
+            margin: 5px 0;
+        }
+        .rules-content p {
+            margin: 12px 0;
+            line-height: 1.4;
+        }
+        .rules-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .rules-content li {
+            margin: 6px 0;
+        }
+        .rules-content strong {
+            color: #ffd966;
+        }
+        /* Стили для тултипа */
+        .cell-tooltip {
+            position: fixed;
+            background: #1e2b17ee;
+            backdrop-filter: blur(8px);
+            color: #fef7d2;
+            padding: 8px 14px;
+            border-radius: 28px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid #ffdfa5;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            pointer-events: none;
+            z-index: 10000;
+            white-space: nowrap;
+            font-family: 'Segoe UI', monospace;
+            letter-spacing: 0.5px;
+            transition: opacity 0.1s;
+        }
+        .cell-tooltip span {
+            display: inline-block;
+            margin-right: 6px;
+        }
+        @media (max-width: 700px) {
+            .info-panel { flex-direction: column; align-items: stretch; }
+            .log { max-width: 100%; }
+            .action-btn { font-size: 1.2rem; padding: 12px; }
+            .burger-menu { top: 10px; right: 10px; }
+            .rules-content { font-size: 0.9rem; }
+            .cell-tooltip { font-size: 0.75rem; padding: 6px 12px; white-space: normal; max-width: 220px; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div class="burger-menu">
+        <div class="burger-icon" id="burgerIcon">
+            <div></div><div></div><div></div>
+        </div>
+        <div id="dropdownMenu" class="dropdown-menu hidden">
+            <button id="saveGameBtn">💾 Сохранить игру</button>
+            <button id="loadGameBtn">📂 Загрузить игру</button>
+            <button id="newGameBtn">🆕 Новая игра</button>
+            <button id="soundToggleBtn">🔊 Звук вкл</button>
+            <button id="rulesBtn">📜 Правила игры</button>
+        </div>
+    </div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div class="info-panel">
+            <div class="player-status" id="playerStatus"></div>
+            <div class="resource-box" id="resourcesPanel"></div>
+            <div class="action-counter" id="actionsLeft">⚡ 3 действия</div>
+            <button class="end-turn-btn" id="endTurnBtn">✅ Завершить ход</button>
+        </div>
+        <div class="info-panel" style="justify-content: space-between;">
+            <div class="turn-indicator" id="turnIndicator"></div>
+            <div class="log" id="logPanel">▶ Добро пожаловать!<br>Начинает синий игрок</div>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #bcbc8a;">
+        💡 3 действия за ход. Клик по клетке → меню. Дорога = цветная полоска. Доход с баз каждые 3 хода.<br>
+        🏛️ Количество отрядов ограничено числом казарм. 🧱 Стена защищает отряд на клетке. 🏪 Рынок обменивает ресурсы.<br>
+        🔍 Наведите курсор на клетку — появится подробная информация.
+    </div>
+</div>
+
+<!-- Модальное окно для действий -->
+<div id="actionModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">Выберите действие</h3>
+        <div id="actionButtons" class="action-buttons"></div>
+        <button class="close-modal" id="closeModalBtn">Отмена</button>
+    </div>
+</div>
+
+<!-- Модальное окно для уведомлений и ошибок -->
+<div id="messageModal" class="modal">
+    <div class="modal-content">
+        <h3 id="messageTitle">Уведомление</h3>
+        <p id="messageText"></p>
+        <button class="close-modal" id="closeMessageBtn">OK</button>
+    </div>
+</div>
+
+<!-- Модальное окно правил -->
+<div id="rulesModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3>📜 Правила игры</h3>
+        <div class="rules-content">
+            <p><strong>⚡ Действия:</strong> У вас есть <strong>3 действия за ход</strong>. Каждое действие тратится на:</p>
+            <ul>
+                <li>Постройку дороги, здания или базы</li>
+                <li>Захват ресурса</li>
+                <li>Наём отряда</li>
+                <li><strong>Перемещение отряда</strong> (даже без боя)</li>
+                <li>Атаку отрядом</li>
+                <li>Обмен ресурсов на Рынке</li>
+            </ul>
+            <p><strong>🎯 Выбор отряда</strong> (кнопка "Выбрать отряд") <strong>не тратит действие</strong>.</p>
+            <p><strong>🏰 Базы:</strong> Дают доход <strong>1💰 за базу каждые 3 хода</strong>. Если с базы уходит отряд, враг может <strong>захватить её</strong>, просто зайдя на эту клетку (своим отрядом или построив дорогу).</p>
+            <p><strong>🛣️ Дороги:</strong> Строятся за 1💰 рядом с вашей территорией. Позволяют расширять влияние и строить здания на захваченных клетках.</p>
+            <p><strong>🏛️ Казармы:</strong> Позволяют нанимать отряды. <strong>1 казарма = 1 отряд</strong>. Больше отрядов, чем казарм, нанять нельзя.</p>
+            <p><strong>⚔️ Отряды:</strong> Могут перемещаться на соседнюю клетку (тратит 1 действие, а также 1💰 если клетка вражеская). Атакуют вражеские отряды и здания. При атаке вражеского отряда без стены оба погибают. При атаке на отряд за стеной атакующий погибает, защитник и стена остаются. При атаке на здание (кроме базы) здание разрушается, а ваш отряд занимает клетку. Базу можно захватить, зайдя на неё отрядом, если на ней нет защитника.</p>
+            <p><strong>🧱 Стена:</strong> Стоимость 5🪵 + 2⛏️. Строится на своей территории. Если вражеский отряд атакует клетку, где есть стена И ваш отряд, то вражеский отряд погибает, а ваш отряд и стена остаются. Если стена без отряда — враг разрушает её и занимает клетку.</p>
+            <p><strong>🏪 Рынок:</strong> Стоимость 10💰 + 5🪵 + 5⛏️. Позволяет обменивать дерево или металл на золото в пропорциях 1:1, 5:5, 10:10. Каждый обмен стоит 1 действие.</p>
+            <p><strong>🌲 Ресурсы:</strong> Захват ресурса стоит 1💰 и даёт бонус: лес → +1🪵, металл → +1⛏️, золото → +20💰, житель → +1👥.</p>
+            <p><strong>🏆 Победа:</strong> Уничтожьте все базы противника!</p>
+            <p style="font-size: 0.9rem; color: #d4c29e;">Подсказка: не оставляйте базы без защиты отрядом, иначе враг легко их захватит. Стена усилит оборону.</p>
+        </div>
+        <button class="close-modal" id="closeRulesBtn">Понятно!</button>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- КОНСТАНТЫ ----------
+        const SIZE = 20;
+        const CELL_W = 30;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = SIZE * CELL_W;
+        canvas.height = SIZE * CELL_W;
+
+        const TERRAIN = {
+            GRASS: 0,
+            FOREST: 1,
+            METAL_VEIN: 2,
+            GOLD_VEIN: 3,
+            VILLAGER: 4
+        };
+
+        // Глобальное состояние
+        let map = Array(SIZE).fill().map(() => Array(SIZE).fill(TERRAIN.GRASS));
+        let owner = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+        let buildings = Array(SIZE).fill().map(() => Array(SIZE).fill(null));
+        let units = Array(SIZE).fill().map(() => Array(SIZE).fill(null));
+        
+        let players = {
+            1: { gold: 10, wood: 0, metal: 0, villagers: 0, bases: 0, name: 'Синий', color: '#4c9eff' },
+            2: { gold: 10, wood: 0, metal: 0, villagers: 0, bases: 0, name: 'Красный', color: '#e35f3e' }
+        };
+        
+        let currentPlayer = 1;
+        let actionsRemaining = 3;
+        let globalTurnCounter = 1;
+        let bases = { 1: [], 2: [] };
+        let logEntries = [];
+        let selectedUnitPos = null;
+        
+        // Анимация перемещения
+        let movingAnimation = null;
+        let isAnimating = false;
+        
+        // Автосохранение
+        let autoSaveEnabled = true;
+        
+        // Эффекты
+        let animationEffects = [];
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        // ---------- ТУЛТИП ----------
+        const tooltipDiv = document.createElement('div');
+        tooltipDiv.className = 'cell-tooltip hidden';
+        document.body.appendChild(tooltipDiv);
+        
+        function getTerrainIcon(terrain) {
+            switch(terrain) {
+                case TERRAIN.FOREST: return '🌳';
+                case TERRAIN.METAL_VEIN: return '⛏️';
+                case TERRAIN.GOLD_VEIN: return '💰';
+                case TERRAIN.VILLAGER: return '👤';
+                default: return '🌿';
+            }
+        }
+        
+        function getTerrainName(terrain) {
+            switch(terrain) {
+                case TERRAIN.FOREST: return 'Лес';
+                case TERRAIN.METAL_VEIN: return 'Металл';
+                case TERRAIN.GOLD_VEIN: return 'Золотая жила';
+                case TERRAIN.VILLAGER: return 'Поселенец';
+                default: return 'Равнина';
+            }
+        }
+        
+        function getBuildingInfo(b) {
+            if(!b) return null;
+            let typeName = '';
+            let icon = '';
+            switch(b.type) {
+                case 'base': typeName = 'База'; icon = '🏰'; break;
+                case 'lumbermill': typeName = 'Лесопилка'; icon = '🪵'; break;
+                case 'mine': typeName = 'Шахта'; icon = '⛏️'; break;
+                case 'barracks': typeName = 'Казарма'; icon = '🏛️'; break;
+                case 'wall': typeName = 'Стена'; icon = '🧱'; break;
+                case 'market': typeName = 'Рынок'; icon = '🏪'; break;
+                default: typeName = 'Здание'; icon = '🏠';
+            }
+            return { name: typeName, icon, player: b.player };
+        }
+        
+        function updateTooltip(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let mouseX = (e.clientX - rect.left) * scaleX;
+            let mouseY = (e.clientY - rect.top) * scaleY;
+            let col = Math.floor(mouseX / CELL_W);
+            let row = Math.floor(mouseY / CELL_W);
+            if(row < 0 || row >= SIZE || col < 0 || col >= SIZE) {
+                tooltipDiv.classList.add('hidden');
+                return;
+            }
+            
+            let terrain = map[row][col];
+            let terrainIcon = getTerrainIcon(terrain);
+            let terrainName = getTerrainName(terrain);
+            let building = buildings[row][col];
+            let unit = units[row][col];
+            let cellOwner = owner[row][col];
+            let ownerName = cellOwner === 1 ? 'Синий' : (cellOwner === 2 ? 'Красный' : 'Ничей');
+            let ownerColor = cellOwner === 1 ? '#8bb9ff' : (cellOwner === 2 ? '#ffaa88' : '#aaa');
+            
+            let lines = [];
+            lines.push(`📍 Координаты: ${row},${col}`);
+            lines.push(`🌍 Тип: ${terrainIcon} ${terrainName}`);
+            if(cellOwner !== 0 && !(building && building.type === 'base')) {
+                lines.push(`🛣️ Владелец дороги: <span style="color:${ownerColor}">${ownerName}</span>`);
+            } else if(building && building.type === 'base') {
+                lines.push(`🏰 Владелец базы: <span style="color:${ownerColor}">${ownerName}</span>`);
+            }
+            
+            if(building) {
+                let bInfo = getBuildingInfo(building);
+                let ownerBuilding = building.player === 1 ? 'Синий' : 'Красный';
+                lines.push(`${bInfo.icon} Здание: ${bInfo.name} (${ownerBuilding})`);
+            }
+            if(unit) {
+                let unitOwner = unit.player === 1 ? 'Синий' : 'Красный';
+                lines.push(`⚔️ Отряд: ${unitOwner}`);
+            }
+            
+            if(!building && !unit && cellOwner === 0 && terrain === TERRAIN.GRASS) {
+                lines.push(`✨ Пустая трава`);
+            } else if(terrain !== TERRAIN.GRASS && !building && cellOwner === 0) {
+                lines.push(`💎 Не захваченный ресурс`);
+            }
+            
+            let tooltipHtml = lines.map(l => `<span>${l}</span><br>`).join('');
+            tooltipDiv.innerHTML = tooltipHtml;
+            
+            let left = e.clientX + 15;
+            let top = e.clientY + 15;
+            if(left + 220 > window.innerWidth) left = e.clientX - 230;
+            if(top + 120 > window.innerHeight) top = e.clientY - 100;
+            tooltipDiv.style.left = left + 'px';
+            tooltipDiv.style.top = top + 'px';
+            tooltipDiv.classList.remove('hidden');
+        }
+        
+        function hideTooltip() {
+            tooltipDiv.classList.add('hidden');
+        }
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if(isAnimating) {
+                hideTooltip();
+                return;
+            }
+            updateTooltip(e);
+        });
+        canvas.addEventListener('mouseleave', () => hideTooltip());
+
+        // ---------- МОДАЛЬНЫЕ СООБЩЕНИЯ ----------
+        function showMessage(title, text) {
+            const modal = document.getElementById('messageModal');
+            document.getElementById('messageTitle').innerText = title;
+            document.getElementById('messageText').innerHTML = text;
+            modal.style.display = 'flex';
+        }
+
+        // ---------- АНИМАЦИИ И ЗВУКИ ----------
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) { console.log('Web Audio API not supported'); }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            if (!audioCtx) initAudio();
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => playSound(type));
+                return;
+            }
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.3);
+                switch(type) {
+                    case 'click': osc.frequency.value = 880; gain.gain.setValueAtTime(0.05, now); break;
+                    case 'build': osc.frequency.value = 523.25; break;
+                    case 'attack': osc.frequency.value = 220; osc.type = 'square'; gain.gain.setValueAtTime(0.08, now); break;
+                    case 'move': osc.frequency.value = 659.25; break;
+                    case 'victory': osc.frequency.value = 880; gain.gain.setValueAtTime(0.15, now); setTimeout(()=> { if(osc) osc.frequency.value = 587.33; }, 100); break;
+                    default: osc.frequency.value = 440;
+                }
+                osc.start();
+                osc.stop(now + 0.2);
+            } catch(e) { console.log('sound error', e); }
+        }
+
+        function addEffect(x, y, type) {
+            animationEffects.push({ x, y, type, endTime: performance.now() + 200 });
+        }
+
+        function drawEffects() {
+            const now = performance.now();
+            for (let i = animationEffects.length-1; i >= 0; i--) {
+                const e = animationEffects[i];
+                if (now > e.endTime) {
+                    animationEffects.splice(i,1);
+                    continue;
+                }
+                const progress = (e.endTime - now) / 200;
+                const alpha = Math.min(0.6, progress * 0.8);
+                const x = e.y * CELL_W;
+                const y = e.x * CELL_W;
+                if (e.type === 'click') {
+                    ctx.fillStyle = `rgba(255, 255, 200, ${alpha*0.6})`;
+                    ctx.fillRect(x, y, CELL_W, CELL_W);
+                } else if (e.type === 'destroy') {
+                    ctx.fillStyle = `rgba(255, 50, 50, ${alpha*0.8})`;
+                    ctx.fillRect(x, y, CELL_W, CELL_W);
+                }
+            }
+        }
+
+        // ---------- ЛОГ ----------
+        function addLog(msg) {
+            logEntries.unshift(msg);
+            if(logEntries.length > 200) logEntries.pop();
+            const logDiv = document.getElementById('logPanel');
+            logDiv.innerHTML = logEntries.map(l => `<div>▶ ${l}</div>`).join('');
+            logDiv.scrollTop = 0;
+        }
+
+        // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+        function getBarracksCount(player) {
+            let count = 0;
+            for(let i=0;i<SIZE;i++) {
+                for(let j=0;j<SIZE;j++) {
+                    let b = buildings[i][j];
+                    if(b && b.type === 'barracks' && b.player === player) count++;
+                }
+            }
+            return count;
+        }
+
+        function getUnitsCount(player) {
+            let count = 0;
+            for(let i=0;i<SIZE;i++) {
+                for(let j=0;j<SIZE;j++) {
+                    if(units[i][j] && units[i][j].player === player) count++;
+                }
+            }
+            return count;
+        }
+
+        function collectResourcesFromBuildings(player) {
+            let woodIncome = 0, metalIncome = 0;
+            for(let i=0;i<SIZE;i++) {
+                for(let j=0;j<SIZE;j++) {
+                    let b = buildings[i][j];
+                    if(b && b.player === player) {
+                        if(b.type === 'lumbermill') woodIncome++;
+                        if(b.type === 'mine') metalIncome++;
+                    }
+                }
+            }
+            if(woodIncome > 0) {
+                players[player].wood += woodIncome;
+                addLog(`${players[player].name} получает +${woodIncome}🪵 от лесопилок`);
+            }
+            if(metalIncome > 0) {
+                players[player].metal += metalIncome;
+                addLog(`${players[player].name} получает +${metalIncome}⛏️ от шахт`);
+            }
+        }
+
+        function applyBaseIncome() {
+            if(globalTurnCounter % 3 === 1) {
+                for(let p=1;p<=2;p++) {
+                    let income = bases[p].length;
+                    if(income>0) {
+                        players[p].gold += income;
+                        addLog(`${players[p].name} получает ${income}💰 от баз`);
+                    }
+                }
+            }
+        }
+
+        function checkVictory() {
+            if(bases[1].length===0) { 
+                addLog('🏆 КРАСНЫЙ ПОБЕДИЛ!'); 
+                playSound('victory'); 
+                showMessage('ПОБЕДА!', '🔴 Красный игрок уничтожил все базы синего! Поздравляем!');
+                autoSave(); 
+                return true; 
+            }
+            if(bases[2].length===0) { 
+                addLog('🏆 СИНИЙ ПОБЕДИЛ!'); 
+                playSound('victory'); 
+                showMessage('ПОБЕДА!', '🔵 Синий игрок уничтожил все базы красного! Поздравляем!');
+                autoSave(); 
+                return true; 
+            }
+            return false;
+        }
+
+        function captureBase(x, y, newPlayer) {
+            let oldPlayer = buildings[x][y].player;
+            if(oldPlayer === newPlayer) return false;
+            const idx = bases[oldPlayer].findIndex(([bx,by]) => bx===x && by===y);
+            if(idx !== -1) bases[oldPlayer].splice(idx,1);
+            players[oldPlayer].bases--;
+            bases[newPlayer].push([x,y]);
+            players[newPlayer].bases++;
+            buildings[x][y].player = newPlayer;
+            owner[x][y] = newPlayer;
+            addLog(`${players[newPlayer].name} захватил базу в (${x},${y}) у ${players[oldPlayer].name}!`);
+            playSound('build');
+            return true;
+        }
+
+        function destroyBase(player, x, y) {
+            let idx = bases[player].findIndex(([bx,by]) => bx===x && by===y);
+            if(idx!==-1) {
+                bases[player].splice(idx,1);
+                players[player].bases--;
+                owner[x][y]=0;
+                buildings[x][y]=null;
+                addLog(`${players[player].name} потерял базу в (${x},${y})!`);
+                checkVictory();
+            }
+        }
+
+        function destroyBuilding(x,y) {
+            let b = buildings[x][y];
+            if(!b) return;
+            addEffect(x, y, 'destroy');
+            if(b.type === 'base') destroyBase(b.player, x, y);
+            else { 
+                addLog(`${players[b.player].name} потерял ${b.type} в (${x},${y})`); 
+                buildings[x][y]=null; 
+                owner[x][y]=0; 
+            }
+            playSound('attack');
+        }
+
+        function buildNewBase(x,y,player) {
+            if(map[x][y] !== TERRAIN.GRASS || owner[x][y] !== player || players[player].villagers<=0 || players[player].gold<5 || buildings[x][y]) return false;
+            players[player].gold -=5;
+            players[player].villagers--;
+            buildings[x][y] = { type: 'base', player: player };
+            bases[player].push([x,y]);
+            players[player].bases++;
+            addLog(`${players[player].name} построил новую базу в (${x},${y})`);
+            playSound('build');
+            return true;
+        }
+        
+        function canBuildWall(x,y,player) {
+            return owner[x][y] === player && !buildings[x][y] && !units[x][y] && players[player].wood >= 5 && players[player].metal >= 2;
+        }
+        function buildWall(x,y,player) {
+            if(canBuildWall(x,y,player)) {
+                players[player].wood -= 5;
+                players[player].metal -= 2;
+                buildings[x][y] = { type: 'wall', player: player };
+                addLog(`${players[player].name} построил стену в (${x},${y})`);
+                playSound('build');
+                return true;
+            }
+            return false;
+        }
+        
+        function canBuildMarket(x,y,player) {
+            return owner[x][y] === player && map[x][y] === TERRAIN.GRASS && !buildings[x][y] && !units[x][y] && players[player].gold >= 10 && players[player].wood >= 5 && players[player].metal >= 5;
+        }
+        function buildMarket(x,y,player) {
+            if(canBuildMarket(x,y,player)) {
+                players[player].gold -= 10;
+                players[player].wood -= 5;
+                players[player].metal -= 5;
+                buildings[x][y] = { type: 'market', player: player };
+                addLog(`${players[player].name} построил рынок в (${x},${y})`);
+                playSound('build');
+                return true;
+            }
+            return false;
+        }
+        
+        function marketExchange(player, resource, amount) {
+            if(resource === 'wood') {
+                if(players[player].wood >= amount) {
+                    players[player].wood -= amount;
+                    players[player].gold += amount;
+                    addLog(`${players[player].name} обменял ${amount}🪵 на ${amount}💰 на рынке`);
+                    return true;
+                }
+            } else if(resource === 'metal') {
+                if(players[player].metal >= amount) {
+                    players[player].metal -= amount;
+                    players[player].gold += amount;
+                    addLog(`${players[player].name} обменял ${amount}⛏️ на ${amount}💰 на рынке`);
+                    return true;
+                }
+            }
+            addLog("Недостаточно ресурсов для обмена");
+            return false;
+        }
+
+        function isValidMoveForSelected(sx, sy, tx, ty, player) {
+            if (Math.abs(sx - tx) + Math.abs(sy - ty) !== 1) return false;
+            let targetUnit = units[tx][ty];
+            let targetBuilding = buildings[tx][ty];
+            if (targetUnit && targetUnit.player === player) return false;
+            return true;
+        }
+
+        function drawValidMoves() {
+            if(!selectedUnitPos) return;
+            let {x: sx, y: sy} = selectedUnitPos;
+            let unit = units[sx][sy];
+            if(!unit || unit.player !== currentPlayer) return;
+            for(let dx=-1;dx<=1;dx++) {
+                for(let dy=-1;dy<=1;dy++) {
+                    if(Math.abs(dx)+Math.abs(dy) !== 1) continue;
+                    let tx = sx+dx, ty = sy+dy;
+                    if(tx<0 || tx>=SIZE || ty<0 || ty>=SIZE) continue;
+                    if(isValidMoveForSelected(sx, sy, tx, ty, currentPlayer)) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.5;
+                        ctx.fillStyle = '#ffcc44';
+                        ctx.fillRect(ty*CELL_W, tx*CELL_W, CELL_W, CELL_W);
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(let i=0;i<SIZE;i++) {
+                for(let j=0;j<SIZE;j++) {
+                    let x=j*CELL_W, y=i*CELL_W;
+                    let t = map[i][j];
+                    if(t===TERRAIN.GRASS) ctx.fillStyle = '#6f9e3f';
+                    else if(t===TERRAIN.FOREST) ctx.fillStyle = '#2f6b2f';
+                    else if(t===TERRAIN.METAL_VEIN) ctx.fillStyle = '#7a7a7a';
+                    else if(t===TERRAIN.GOLD_VEIN) ctx.fillStyle = '#e7b42c';
+                    else if(t===TERRAIN.VILLAGER) ctx.fillStyle = '#b97f44';
+                    ctx.fillRect(x,y,CELL_W-1,CELL_W-1);
+                    
+                    if(owner[i][j] !== 0 && !(buildings[i][j] && buildings[i][j].type === 'base')) {
+                        ctx.fillStyle = (owner[i][j]===1)? '#4c9effaa' : '#e35f3eaa';
+                        ctx.fillRect(x+4,y+CELL_W-6,CELL_W-8,4);
+                    }
+                    
+                    let hasBuilding = buildings[i][j] !== null;
+                    if(!hasBuilding) {
+                        ctx.font = `${CELL_W-6}px "Segoe UI Emoji"`;
+                        if(t === TERRAIN.GOLD_VEIN) ctx.fillText('💰', x+5, y+CELL_W-7);
+                        else if(t === TERRAIN.FOREST) ctx.fillText('🌳', x+5, y+CELL_W-7);
+                        else if(t === TERRAIN.METAL_VEIN) ctx.fillText('🪨', x+5, y+CELL_W-7);
+                        else if(t === TERRAIN.VILLAGER) ctx.fillText('👤', x+5, y+CELL_W-7);
+                    }
+                    
+                    let b = buildings[i][j];
+                    if(b) {
+                        if(b.type === 'base') {
+                            ctx.fillStyle = (b.player===1)? '#3a86ff' : '#e63946';
+                            ctx.beginPath();
+                            ctx.arc(x+CELL_W/2, y+CELL_W/2, CELL_W*0.3, 0, Math.PI*2);
+                            ctx.fill();
+                            ctx.fillStyle = 'white';
+                            ctx.font = `${CELL_W*0.4}px monospace`;
+                            ctx.fillText('🏠', x+CELL_W*0.3, y+CELL_W*0.7);
+                        } else if(b.type === 'lumbermill') {
+                            ctx.fillStyle = '#b58c4a';
+                            ctx.fillRect(x+5,y+CELL_W-12,CELL_W-10,8);
+                            ctx.fillStyle = '#4a5e2a';
+                            ctx.fillRect(x+CELL_W/2-3, y+CELL_W/2-5, 6, 10);
+                        } else if(b.type === 'mine') {
+                            ctx.fillStyle = '#5a5a6e';
+                            ctx.fillRect(x+6,y+CELL_W-12,CELL_W-12,8);
+                            ctx.fillStyle = '#9e8e6e';
+                            ctx.fillRect(x+CELL_W/2-4, y+CELL_W/2-2, 8, 8);
+                        } else if(b.type === 'barracks') {
+                            ctx.fillStyle = '#ac4e2e';
+                            ctx.fillRect(x+6,y+CELL_W-14,CELL_W-12,10);
+                            ctx.fillStyle = '#d1aa6a';
+                            ctx.fillRect(x+CELL_W/2-2, y+CELL_W/2-3, 4, 6);
+                        } else if(b.type === 'wall') {
+                            ctx.fillStyle = '#8b7a6b';
+                            ctx.fillRect(x+4, y+4, CELL_W-8, CELL_W-8);
+                            ctx.fillStyle = '#5a4a3a';
+                            ctx.fillRect(x+8, y+8, CELL_W-16, CELL_W-16);
+                        } else if(b.type === 'market') {
+                            ctx.fillStyle = '#e0b06b';
+                            ctx.fillRect(x+5, y+5, CELL_W-10, CELL_W-10);
+                            ctx.fillStyle = '#9a6e3a';
+                            ctx.fillText('🏪', x+CELL_W*0.3, y+CELL_W*0.7);
+                        }
+                    }
+                    let u = units[i][j];
+                    if(u && !movingAnimation) {
+                        ctx.fillStyle = (u.player===1)? '#2979ff' : '#f25e4a';
+                        ctx.beginPath();
+                        ctx.arc(x+CELL_W/2, y+CELL_W/2, CELL_W*0.25, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.fillStyle = 'white';
+                        ctx.font = `bold ${CELL_W*0.3}px monospace`;
+                        ctx.fillText('⚔️', x+CELL_W*0.35, y+CELL_W*0.7);
+                    }
+                    ctx.strokeStyle = '#3a2a1a';
+                    ctx.strokeRect(x,y,CELL_W,CELL_W);
+                }
+            }
+            if(selectedUnitPos) {
+                let {x: sx, y: sy} = selectedUnitPos;
+                ctx.save();
+                ctx.strokeStyle = '#ffdd55';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(sy*CELL_W, sx*CELL_W, CELL_W, CELL_W);
+                ctx.restore();
+            }
+            drawValidMoves();
+            if(movingAnimation) {
+                let { fromX, fromY, toX, toY, progress, player } = movingAnimation;
+                let fx = fromY * CELL_W;
+                let fy = fromX * CELL_W;
+                let tx = toY * CELL_W;
+                let ty = toX * CELL_W;
+                let curX = fx + (tx - fx) * progress;
+                let curY = fy + (ty - fy) * progress;
+                ctx.fillStyle = (player===1)? '#2979ff' : '#f25e4a';
+                ctx.beginPath();
+                ctx.arc(curX + CELL_W/2, curY + CELL_W/2, CELL_W*0.25, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${CELL_W*0.3}px monospace`;
+                ctx.fillText('⚔️', curX + CELL_W*0.35, curY + CELL_W*0.7);
+            }
+            drawEffects();
+        }
+
+        function refreshUI() {
+            let p = players[currentPlayer];
+            let barracksCount = getBarracksCount(currentPlayer);
+            let unitsCount = getUnitsCount(currentPlayer);
+            document.getElementById('resourcesPanel').innerHTML = `
+                <div class="resource"><span class="gold">💰</span> ${p.gold}</div>
+                <div class="resource"><span class="wood">🪵</span> ${p.wood}</div>
+                <div class="resource"><span class="metal">⛏️</span> ${p.metal}</div>
+                <div class="resource">👥 жит: ${p.villagers}</div>
+                <div class="resource">🏰 баз: ${bases[currentPlayer].length}</div>
+                <div class="resource">⚔️ отр: ${unitsCount}/${barracksCount}</div>
+            `;
+            let actionWord = (actionsRemaining === 1) ? 'действие' : 'действия';
+            document.getElementById('actionsLeft').innerHTML = `⚡ ${actionsRemaining} ${actionWord}`;
+            document.getElementById('turnIndicator').innerHTML = `Ход: ${currentPlayer===1?'🔵 Синий':'🔴 Красный'}  (глоб.ход ${globalTurnCounter})`;
+            document.getElementById('playerStatus').innerHTML = currentPlayer===1 ? '<div class="blue">🔵 СИНИЙ ходит</div>' : '<div class="red">🔴 КРАСНЫЙ ходит</div>';
+        }
+
+        function endTurn() {
+            collectResourcesFromBuildings(currentPlayer);
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            actionsRemaining = 3;
+            globalTurnCounter++;
+            applyBaseIncome();
+            selectedUnitPos = null;
+            refreshUI();
+            draw();
+            addLog(`=== Ход передан ${players[currentPlayer].name} (ход №${globalTurnCounter}) ===`);
+            if(globalTurnCounter % 3 === 1) addLog(`💸 Доход от баз получен!`);
+            checkVictory();
+            autoSave();
+        }
+        
+        function autoSave() {
+            if(!autoSaveEnabled) return;
+            const state = {
+                map, owner, buildings, units, players, bases, currentPlayer, actionsRemaining, globalTurnCounter, selectedUnitPos
+            };
+            localStorage.setItem('roadBaseAutoSave', JSON.stringify(state));
+        }
+        
+        function loadAutoSave() {
+            const raw = localStorage.getItem('roadBaseAutoSave');
+            if(raw) {
+                try {
+                    const state = JSON.parse(raw);
+                    map = state.map;
+                    owner = state.owner;
+                    buildings = state.buildings;
+                    units = state.units;
+                    players = state.players;
+                    bases = state.bases;
+                    currentPlayer = state.currentPlayer;
+                    actionsRemaining = state.actionsRemaining;
+                    globalTurnCounter = state.globalTurnCounter;
+                    selectedUnitPos = state.selectedUnitPos;
+                    refreshUI();
+                    draw();
+                    addLog("Автозагрузка выполнена");
+                    checkVictory();
+                } catch(e) { console.log(e); }
+            }
+        }
+        
+        function saveGame() {
+            autoSaveEnabled = false;
+            const state = {
+                map, owner, buildings, units, players, bases, currentPlayer, actionsRemaining, globalTurnCounter, selectedUnitPos
+            };
+            localStorage.setItem('roadBaseSave', JSON.stringify(state));
+            addLog("Игра сохранена");
+            autoSaveEnabled = true;
+        }
+        
+        function loadGame() {
+            const raw = localStorage.getItem('roadBaseSave');
+            if(!raw) { addLog("Нет сохранённой игры"); return; }
+            try {
+                const state = JSON.parse(raw);
+                map = state.map;
+                owner = state.owner;
+                buildings = state.buildings;
+                units = state.units;
+                players = state.players;
+                bases = state.bases;
+                currentPlayer = state.currentPlayer;
+                actionsRemaining = state.actionsRemaining;
+                globalTurnCounter = state.globalTurnCounter;
+                selectedUnitPos = state.selectedUnitPos;
+                refreshUI();
+                draw();
+                addLog("Игра загружена из ручного сохранения");
+                checkVictory();
+            } catch(e) { addLog("Ошибка загрузки"); }
+        }
+
+        function performAction(actionIndex, x, y, player, actionList) {
+            let actionStr = actionList[actionIndex];
+            let success = false;
+            
+            if(actionStr.includes("Построить дорогу")) {
+                for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) if(Math.abs(dx)+Math.abs(dy)===1) {
+                    let nx=x+dx, ny=y+dy;
+                    if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && owner[nx][ny]===player) {
+                        if(players[player].gold >= 1) {
+                            owner[x][y] = player;
+                            players[player].gold -= 1;
+                            addLog(`Дорога построена в (${x},${y})`);
+                            playSound('build');
+                            success = true;
+                            break;
+                        } else addLog("Не хватает золота");
+                        break;
+                    }
+                }
+                if(!success) addLog("Не удалось построить дорогу (нет рядом своей базы/дороги)");
+            }
+            else if(actionStr.includes("Захватить ресурс")) {
+                let res = map[x][y];
+                if(players[player].gold >=1) {
+                    players[player].gold -=1;
+                    if(res === TERRAIN.GOLD_VEIN) { players[player].gold +=20; addLog(`+20💰 за золотую жилу!`); map[x][y]=TERRAIN.GRASS; success=true; playSound('build');}
+                    else if(res === TERRAIN.VILLAGER) { players[player].villagers++; addLog(`+1 житель`); map[x][y]=TERRAIN.GRASS; success=true; playSound('build');}
+                    else if(res === TERRAIN.FOREST) { players[player].wood++; addLog(`+1🪵 за лес`); map[x][y]=TERRAIN.GRASS; success=true; playSound('build');}
+                    else if(res === TERRAIN.METAL_VEIN) { players[player].metal++; addLog(`+1⛏️ за металл`); map[x][y]=TERRAIN.GRASS; success=true; playSound('build');}
+                    else success=false;
+                    if(success) addLog(`Ресурс захвачен`);
+                } else addLog("Мало золота");
+            }
+            else if(actionStr.includes("Лесопилка")) {
+                if(players[player].gold>=10 && map[x][y]===TERRAIN.FOREST && owner[x][y]===player && !buildings[x][y]){
+                    players[player].gold-=10;
+                    buildings[x][y]={type:'lumbermill', player:player};
+                    addLog(`Лесопилка построена`);
+                    playSound('build');
+                    success=true;
+                } else addLog("Нельзя построить лесопилку");
+            }
+            else if(actionStr.includes("Шахта")) {
+                if(players[player].gold>=10 && map[x][y]===TERRAIN.METAL_VEIN && owner[x][y]===player && !buildings[x][y]){
+                    players[player].gold-=10;
+                    buildings[x][y]={type:'mine', player:player};
+                    addLog(`Шахта построена`);
+                    playSound('build');
+                    success=true;
+                } else addLog("Нельзя построить шахту");
+            }
+            else if(actionStr.includes("Казарма")) {
+                if(players[player].gold>=15 && players[player].wood>=2 && players[player].metal>=1 && map[x][y]===TERRAIN.GRASS && owner[x][y]===player && !buildings[x][y]){
+                    players[player].gold-=15;
+                    players[player].wood-=2;
+                    players[player].metal-=1;
+                    buildings[x][y]={type:'barracks', player:player};
+                    addLog(`Казарма построена`);
+                    playSound('build');
+                    success=true;
+                } else addLog("Не хватает ресурсов (15💰 + 2🪵 + 1⛏️)");
+            }
+            else if(actionStr.includes("Новая база")) {
+                success = buildNewBase(x,y,player);
+                if(!success) addLog("Не удалось построить базу");
+            }
+            else if(actionStr.includes("Стена")) {
+                success = buildWall(x,y,player);
+                if(!success) addLog("Не удалось построить стену (нужно 5🪵 2⛏️, пустая клетка на своей территории)");
+            }
+            else if(actionStr.includes("Рынок")) {
+                success = buildMarket(x,y,player);
+                if(!success) addLog("Не удалось построить рынок (нужно 10💰 5🪵 5⛏️, пустая трава на своей территории)");
+            }
+            else if(actionStr.includes("Нанять отряда")) {
+                let bld = buildings[x][y];
+                let currentUnits = getUnitsCount(player);
+                let barracksCount = getBarracksCount(player);
+                if(bld?.type==='barracks' && bld.player===player && !units[x][y] && players[player].gold>=5){
+                    if(currentUnits >= barracksCount) {
+                        addLog(`Нельзя нанять отряд: достигнут лимит казарм (${barracksCount})`);
+                        success = false;
+                    } else {
+                        players[player].gold-=5;
+                        units[x][y]={player:player};
+                        addLog(`Отряд нанят (${currentUnits+1}/${barracksCount})`);
+                        playSound('build');
+                        success=true;
+                    }
+                } else addLog("Нанять нельзя");
+            }
+            else if(actionStr.includes("Выбрать отряд")) {
+                selectedUnitPos = {x,y};
+                addLog(`Отряд выбран. Кликни на соседнюю клетку для перемещения/атаки.`);
+                playSound('click');
+                draw();
+                return true;
+            }
+            
+            if(success) {
+                actionsRemaining--;
+                refreshUI();
+                draw();
+                checkVictory();
+                autoSave();
+            } else {
+                addLog("Действие не выполнено");
+            }
+            return success;
+        }
+        
+        function showMarketMenu(x, y, player) {
+            const modal = document.getElementById('actionModal');
+            const actionButtonsDiv = document.getElementById('actionButtons');
+            actionButtonsDiv.innerHTML = '';
+            const amounts = [1,5,10];
+            amounts.forEach(amount => {
+                let woodBtn = document.createElement('button');
+                woodBtn.className = 'action-btn';
+                woodBtn.innerText = `🪵 ${amount} → ${amount}💰`;
+                woodBtn.onclick = () => {
+                    if(marketExchange(player, 'wood', amount)) {
+                        actionsRemaining--;
+                        refreshUI();
+                        draw();
+                        autoSave();
+                    }
+                    modal.style.display = 'none';
+                };
+                actionButtonsDiv.appendChild(woodBtn);
+                
+                let metalBtn = document.createElement('button');
+                metalBtn.className = 'action-btn';
+                metalBtn.innerText = `⛏️ ${amount} → ${amount}💰`;
+                metalBtn.onclick = () => {
+                    if(marketExchange(player, 'metal', amount)) {
+                        actionsRemaining--;
+                        refreshUI();
+                        draw();
+                        autoSave();
+                    }
+                    modal.style.display = 'none';
+                };
+                actionButtonsDiv.appendChild(metalBtn);
+            });
+            document.getElementById('modalTitle').innerText = `🏪 Рынок в (${x},${y}) - Обмен ресурсов`;
+            modal.style.display = 'flex';
+        }
+
+        function showActionMenu(x, y, player) {
+            const modal = document.getElementById('actionModal');
+            modal.style.display = 'none';
+            
+            let actions = [];
+            let canBuildRoad = false;
+            if(owner[x][y]===0 && !buildings[x][y] && !units[x][y]) {
+                for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) if(Math.abs(dx)+Math.abs(dy)===1) {
+                    let nx=x+dx, ny=y+dy;
+                    if(nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && owner[nx][ny]===player) {
+                        canBuildRoad = true;
+                        break;
+                    }
+                }
+            }
+            let canCapture = (owner[x][y]===player && (map[x][y]===TERRAIN.GOLD_VEIN || map[x][y]===TERRAIN.VILLAGER || map[x][y]===TERRAIN.FOREST || map[x][y]===TERRAIN.METAL_VEIN));
+            let canBuildLumber = (owner[x][y]===player && map[x][y]===TERRAIN.FOREST && !buildings[x][y]);
+            let canBuildMine = (owner[x][y]===player && map[x][y]===TERRAIN.METAL_VEIN && !buildings[x][y]);
+            let canBuildBarracks = (owner[x][y]===player && map[x][y]===TERRAIN.GRASS && !buildings[x][y]);
+            let canBuildBase = (owner[x][y]===player && map[x][y]===TERRAIN.GRASS && !buildings[x][y] && players[player].villagers>0 && players[player].gold>=5);
+            let canHire = (buildings[x][y]?.type==='barracks' && buildings[x][y].player===player && !units[x][y]);
+            let canSelectUnit = (units[x][y] && units[x][y].player===player);
+            let canBuildWall = canBuildBarracks && players[player].wood >=5 && players[player].metal >=2;
+            let canBuildMarket = canBuildBarracks && players[player].gold>=10 && players[player].wood>=5 && players[player].metal>=5;
+            
+            if(canBuildRoad) actions.push("🚧 Построить дорогу (1💰)");
+            if(canCapture) actions.push("🏹 Захватить ресурс (1💰)");
+            if(canBuildLumber) actions.push("🪵 Лесопилка (10💰)");
+            if(canBuildMine) actions.push("⛏️ Шахта (10💰)");
+            if(canBuildBarracks) actions.push("🏛️ Казарма (15💰 + 2🪵 + 1⛏️)");
+            if(canBuildWall) actions.push("🧱 Стена (5🪵 + 2⛏️)");
+            if(canBuildMarket) actions.push("🏪 Рынок (10💰 + 5🪵 + 5⛏️)");
+            if(canBuildBase) actions.push("🏰 Новая база (5💰 + 1👥)");
+            if(canHire) actions.push("⚔️ Нанять отряда (5💰)");
+            if(canSelectUnit) actions.push("🎯 Выбрать отряд");
+            
+            if(buildings[x][y] && buildings[x][y].type === 'market' && buildings[x][y].player === player) {
+                showMarketMenu(x, y, player);
+                return;
+            }
+            
+            if(actions.length === 0) {
+                addLog("Ничего нельзя сделать на этой клетке");
+                showMessage("Невозможно действие", "На этой клетке ничего нельзя сделать! Попробуйте кликнуть на пустую клетку рядом с базой или на свой ресурс.");
+                return;
+            }
+            const actionButtonsDiv = document.getElementById('actionButtons');
+            actionButtonsDiv.innerHTML = '';
+            actions.forEach((act, idx) => {
+                let btn = document.createElement('button');
+                btn.className = 'action-btn';
+                btn.innerText = act;
+                btn.onclick = () => {
+                    performAction(idx, x, y, player, actions);
+                    modal.style.display = 'none';
+                    if(selectedUnitPos) draw();
+                };
+                actionButtonsDiv.appendChild(btn);
+            });
+            document.getElementById('modalTitle').innerText = `Действия в (${x},${y})`;
+            modal.style.display = 'flex';
+            playSound('click');
+        }
+        
+        function startUnitAnimation(fromX, fromY, toX, toY, player, onComplete) {
+            if(isAnimating) return;
+            isAnimating = true;
+            let startTime = null;
+            const duration = 200;
+            movingAnimation = { fromX, fromY, toX, toY, player, progress: 0 };
+            function step(timestamp) {
+                if(!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                movingAnimation.progress = progress;
+                draw();
+                if(progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    movingAnimation = null;
+                    isAnimating = false;
+                    if(onComplete) onComplete();
+                    draw();
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function handleCellClick(row, col) {
+            if(checkVictory() || isAnimating) return;
+            if(actionsRemaining <= 0) { addLog("Действий нет, завершите ход!"); return; }
+            let player = currentPlayer;
+            let x=row, y=col;
+            addEffect(x, y, 'click');
+            
+            if(selectedUnitPos) {
+                let sx = selectedUnitPos.x, sy = selectedUnitPos.y;
+                let unit = units[sx][sy];
+                if(!unit || unit.player!==player) { addLog("Отряд не ваш"); selectedUnitPos=null; draw(); return; }
+                if(Math.abs(sx-x)+Math.abs(sy-y)!==1) { addLog("Отряд ходит только на соседнюю клетку"); selectedUnitPos=null; draw(); return; }
+                
+                let targetUnit = units[x][y];
+                if (targetUnit && targetUnit.player === player) {
+                    addLog("Нельзя переместиться на своего отряда");
+                    selectedUnitPos = null;
+                    draw();
+                    return;
+                }
+                
+                let cost = (owner[x][y] === player) ? 0 : 1;
+                if(players[player].gold < cost) { addLog(`Не хватает монет (нужно ${cost})`); selectedUnitPos=null; draw(); return; }
+                
+                let targetBuilding = buildings[x][y];
+                
+                if(targetUnit && targetUnit.player !== player) {
+                    let hasWall = (targetBuilding && targetBuilding.type === 'wall' && targetBuilding.player === targetUnit.player);
+                    if(hasWall) {
+                        units[sx][sy] = null;
+                        players[player].gold -= cost;
+                        addLog(`Бой у стены! Ваш отряд уничтожен, вражеский отряд и стена устояли в (${x},${y})`);
+                        playSound('attack');
+                        addEffect(x, y, 'destroy');
+                        if(!(targetBuilding && targetBuilding.type === 'base')) {
+                            if(owner[x][y] !== player && owner[x][y] !== 0) owner[x][y] = 0;
+                        }
+                        selectedUnitPos = null;
+                        actionsRemaining--;
+                        refreshUI(); draw();
+                        autoSave();
+                        if(checkVictory()) return;
+                        return;
+                    } else {
+                        units[sx][sy] = null;
+                        units[x][y] = null;
+                        players[player].gold -= cost;
+                        addLog(`Бой! Оба отряда уничтожены в (${x},${y})`);
+                        playSound('attack');
+                        addEffect(x, y, 'destroy');
+                        if(!(targetBuilding && targetBuilding.type === 'base')) {
+                            if(owner[x][y] !== player && owner[x][y] !== 0) owner[x][y] = 0;
+                        }
+                        selectedUnitPos = null;
+                        actionsRemaining--;
+                        refreshUI(); draw();
+                        autoSave();
+                        if(checkVictory()) return;
+                        return;
+                    }
+                }
+                
+                if(targetBuilding && targetBuilding.player !== player) {
+                    if(targetBuilding.type === 'base' && !targetUnit) {
+                        players[player].gold -= cost;
+                        let unitCopy = unit;
+                        units[sx][sy] = null;
+                        startUnitAnimation(sx, sy, x, y, player, () => {
+                            units[x][y] = unitCopy;
+                            captureBase(x, y, player);
+                            selectedUnitPos = null;
+                            actionsRemaining--;
+                            refreshUI(); draw();
+                            autoSave();
+                            checkVictory();
+                        });
+                        return;
+                    }
+                    if(targetBuilding.type === 'wall' && !targetUnit) {
+                        players[player].gold -= cost;
+                        let unitCopy = unit;
+                        units[sx][sy] = null;
+                        startUnitAnimation(sx, sy, x, y, player, () => {
+                            units[x][y] = unitCopy;
+                            destroyBuilding(x,y);
+                            addLog(`${players[player].name} разрушил стену и занял клетку (${x},${y})`);
+                            selectedUnitPos = null;
+                            actionsRemaining--;
+                            refreshUI(); draw();
+                            autoSave();
+                            checkVictory();
+                        });
+                        return;
+                    }
+                    if(targetBuilding.type !== 'base') {
+                        players[player].gold -= cost;
+                        let unitCopy = unit;
+                        units[sx][sy] = null;
+                        startUnitAnimation(sx, sy, x, y, player, () => {
+                            units[x][y] = unitCopy;
+                            destroyBuilding(x,y);
+                            addLog(`${players[player].name} уничтожил ${targetBuilding.type} и занял клетку (${x},${y})`);
+                            selectedUnitPos = null;
+                            actionsRemaining--;
+                            refreshUI(); draw();
+                            autoSave();
+                            checkVictory();
+                        });
+                        return;
+                    }
+                    addLog("Нельзя атаковать базу с защитником напрямую, сначала уничтожьте отряд");
+                    selectedUnitPos = null;
+                    draw();
+                    return;
+                }
+                
+                if(cost>0) {
+                    players[player].gold -= cost;
+                    addLog(`Перемещение на вражескую клетку стоило 1💰`);
+                } else {
+                    addLog(`Перемещение по своей территории бесплатно`);
+                }
+                let unitCopy = unit;
+                units[sx][sy] = null;
+                let destroyRoad = (owner[x][y] !== player && owner[x][y] !== 0 && !buildings[x][y]);
+                startUnitAnimation(sx, sy, x, y, player, () => {
+                    units[x][y] = unitCopy;
+                    if(destroyRoad) {
+                        if(!(buildings[x][y] && buildings[x][y].type === 'base')) {
+                            owner[x][y] = 0;
+                            addLog(`Вражеская дорога уничтожена`);
+                        } else {
+                            addLog(`Клетка с базой, дорога не тронута`);
+                        }
+                    }
+                    addLog(`${players[player].name} переместил отряд в (${x},${y})`);
+                    playSound('move');
+                    selectedUnitPos = null;
+                    actionsRemaining--;
+                    refreshUI();
+                    draw();
+                    autoSave();
+                    checkVictory();
+                });
+                return;
+            }
+            
+            if(owner[x][y] !== 0 && owner[x][y] !== player && !buildings[x][y] && !units[x][y]) {
+                addLog("Выберите отряд для атаки или стройте на своей территории");
+                return;
+            }
+            showActionMenu(x, y, player);
+        }
+
+        function initMap() {
+            for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) {
+                map[i][j] = TERRAIN.GRASS;
+                owner[i][j] = 0;
+                buildings[i][j] = null;
+                units[i][j] = null;
+            }
+            const total = SIZE*SIZE;
+            const forestCnt = Math.floor(total*0.1);
+            const metalCnt = Math.floor(total*0.05);
+            const goldCnt = Math.floor(total*0.04);
+            const villCnt = Math.floor(total*0.03);
+            const randEmpty = () => {
+                let x,y; do { x=Math.floor(Math.random()*SIZE); y=Math.floor(Math.random()*SIZE); } while(map[x][y]!==TERRAIN.GRASS);
+                return [x,y];
+            };
+            for(let i=0;i<forestCnt;i++) { let [x,y]=randEmpty(); map[x][y]=TERRAIN.FOREST; }
+            for(let i=0;i<metalCnt;i++) { let [x,y]=randEmpty(); map[x][y]=TERRAIN.METAL_VEIN; }
+            for(let i=0;i<goldCnt;i++) { let [x,y]=randEmpty(); map[x][y]=TERRAIN.GOLD_VEIN; }
+            for(let i=0;i<villCnt;i++) { let [x,y]=randEmpty(); map[x][y]=TERRAIN.VILLAGER; }
+        }
+
+        function placeBase(player, x, y) {
+            if(map[x][y] !== TERRAIN.GRASS) return false;
+            if(owner[x][y] !== 0) return false;
+            owner[x][y] = player;
+            buildings[x][y] = { type: 'base', player: player };
+            bases[player].push([x,y]);
+            players[player].bases++;
+            return true;
+        }
+
+        function initBases() {
+            bases = {1:[],2:[]};
+            players[1].bases = 0; players[2].bases = 0;
+            for(let p=1;p<=2;p++) {
+                let placed = false;
+                for(let tries=0;tries<500;tries++) {
+                    let x = Math.floor(Math.random()*SIZE);
+                    let y = Math.floor(Math.random()*SIZE);
+                    if(map[x][y] === TERRAIN.GRASS && owner[x][y]===0) {
+                        let other = bases[p===1?2:1];
+                        let ok = true;
+                        for(let [bx,by] of other) if(Math.abs(bx-x)+Math.abs(by-y)<6) { ok=false; break; }
+                        if(ok) { placeBase(p,x,y); placed=true; break; }
+                    }
+                }
+                if(!placed) {
+                    for(let i=0;i<SIZE && !placed;i++) for(let j=0;j<SIZE && !placed;j++)
+                        if(map[i][j]===TERRAIN.GRASS && owner[i][j]===0) placeBase(p,i,j), placed=true;
+                }
+            }
+        }
+
+        function resetGame() {
+            initMap();
+            initBases();
+            currentPlayer = 1;
+            actionsRemaining = 3;
+            globalTurnCounter = 1;
+            players[1].gold = 10; players[2].gold = 10;
+            players[1].wood = 0; players[2].wood = 0;
+            players[1].metal = 0; players[2].metal = 0;
+            players[1].villagers = 0; players[2].villagers = 0;
+            players[1].bases = bases[1].length;
+            players[2].bases = bases[2].length;
+            for(let i=0;i<SIZE;i++) for(let j=0;j<SIZE;j++) units[i][j]=null;
+            selectedUnitPos = null;
+            logEntries = [];
+            animationEffects = [];
+            refreshUI();
+            draw();
+            addLog("Новая игра начата! Синий ходит первым");
+            autoSave();
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggleBtn');
+            if (btn) {
+                btn.innerText = soundEnabled ? "🔊 Звук вкл" : "🔇 Звук выкл";
+            }
+            addLog(`Звук ${soundEnabled ? "включён" : "выключен"}`);
+        }
+
+        canvas.addEventListener('click', (e) => {
+            initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let mouseX = (e.clientX - rect.left) * scaleX;
+            let mouseY = (e.clientY - rect.top) * scaleY;
+            let col = Math.floor(mouseX / CELL_W);
+            let row = Math.floor(mouseY / CELL_W);
+            if(row>=0 && row<SIZE && col>=0 && col<SIZE) handleCellClick(row, col);
+        });
+
+        const endTurnBtn = document.getElementById('endTurnBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modal = document.getElementById('actionModal');
+        const rulesModal = document.getElementById('rulesModal');
+        const closeRulesBtn = document.getElementById('closeRulesBtn');
+        const closeMessageBtn = document.getElementById('closeMessageBtn');
+        const messageModal = document.getElementById('messageModal');
+        
+        endTurnBtn.addEventListener('click', () => { endTurn(); draw(); });
+        closeModalBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+        closeMessageBtn.addEventListener('click', () => { messageModal.style.display = 'none'; });
+        window.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; if(e.target === messageModal) messageModal.style.display = 'none'; });
+        
+        function showRules() {
+            rulesModal.style.display = 'flex';
+        }
+        closeRulesBtn.addEventListener('click', () => { rulesModal.style.display = 'none'; });
+        window.addEventListener('click', (e) => { if(e.target === rulesModal) rulesModal.style.display = 'none'; });
+        
+        const burgerIcon = document.getElementById('burgerIcon');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        burgerIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', (e) => {
+            if(!burgerIcon.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+        document.getElementById('saveGameBtn').addEventListener('click', () => { saveGame(); dropdownMenu.classList.add('hidden'); });
+        document.getElementById('loadGameBtn').addEventListener('click', () => { loadGame(); dropdownMenu.classList.add('hidden'); });
+        document.getElementById('newGameBtn').addEventListener('click', () => { resetGame(); dropdownMenu.classList.add('hidden'); });
+        document.getElementById('rulesBtn').addEventListener('click', () => { showRules(); dropdownMenu.classList.add('hidden'); });
+        document.getElementById('soundToggleBtn').addEventListener('click', () => { toggleSound(); dropdownMenu.classList.add('hidden'); });
+        
+        loadAutoSave();
+        if(!localStorage.getItem('roadBaseAutoSave')) resetGame();
+        function animate() {
+            draw();
+            requestAnimationFrame(animate);
+        }
+        animate();
+    })();
+</script>
+</body>
+</html>
